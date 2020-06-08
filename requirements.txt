@@ -1,0 +1,6 @@
+torch
+numpy
+pandas
+tensorflow
+tensorboard
+wandb
