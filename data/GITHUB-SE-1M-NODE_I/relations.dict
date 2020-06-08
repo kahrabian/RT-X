@@ -1,0 +1,14 @@
+0	U_SE_C_I
+1	I_AO_C_R
+2	U_SE_O_I
+3	I_AO_O_R
+4	U_SO_C_P
+5	P_AO_C_R
+6	U_SO_O_P
+7	P_AO_O_R
+8	U_SE_RO_I
+9	I_AO_RO_R
+10	U_SO_R_P
+11	P_AO_R_R
+12	U_CO_A_R
+13	R_FO_R
