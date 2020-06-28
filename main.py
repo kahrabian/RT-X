@@ -1,15 +1,6 @@
-import argparse
-import json
 import logging
 import os
-import random
-import re
-from collections import defaultdict
-from datetime import datetime
-from itertools import chain
 
-import numpy as np
-import pandas as pd
 import torch
 import torch.nn as nn
 import wandb
@@ -17,9 +8,10 @@ from torch.optim.lr_scheduler import MultiStepLR
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
-import utils as ut
-from dataloader import BidirectionalOneShotIterator, TrainDataset
-from model import KGEModel
+from src import utils as ut
+from src.dataloader import BidirectionalOneShotIterator, TrainDataset
+from src.model import KGEModel
+from src.runner import test_step, train_step
 
 
 def main(args):
@@ -28,8 +20,8 @@ def main(args):
     os.makedirs(args.save_path, exist_ok=True)
 
     ut.logger(args)
-    tb_sw = SummaryWriter(log_dir=args.log_dir)
-    wandb.init(project='ghkg', sync_tensorboard=True)
+    tb_sw = SummaryWriter(log_dir=args.tensorboard_dir)
+    wandb.init(project='ghkg', sync_tensorboard=True, dir=args.wandb_dir)
 
     e2id = ut.index('entities.dict', args)
     r2id = ut.index('relations.dict', args)
@@ -39,9 +31,9 @@ def main(args):
     for k, v in sorted(vars(args).items()):
         logging.info(f'{k} = {v}')
 
-    tr_q = ut.read(os.path.join(args.dataset, 'train.txt'), e2id, r2id, args.static)
-    vd_q = ut.read(os.path.join(args.dataset, 'valid.txt'), e2id, r2id, args.static)
-    ts_q = ut.read(os.path.join(args.dataset, 'test.txt'), e2id, r2id, args.static)
+    tr_q = ut.read(os.path.join(args.dataset, 'train.txt'), e2id, r2id)
+    vd_q = ut.read(os.path.join(args.dataset, 'valid.txt'), e2id, r2id)
+    ts_q = ut.read(os.path.join(args.dataset, 'test.txt'), e2id, r2id)
     logging.info(f'# Train = {len(tr_q)}')
     logging.info(f'# Valid = {len(vd_q)}')
     logging.info(f'# Test = {len(ts_q)}')
@@ -51,14 +43,13 @@ def main(args):
     tp_ix, tp_rix = ut.type_index(args) if args.negative_type_sampling or args.type_evaluation else (None, None)
     e_ix, u_ix = ut.users_index(args) if args.heuristic_evaluation else (None, None)
 
-    mdl = nn.DataParallel(KGEModel(tp_ix, tp_rix, e_ix, u_ix, args))
+    mdl = nn.DataParallel(KGEModel(args))
     if args.cuda:
         mdl = mdl.cuda()
 
     logging.info('Model Parameter Configuration:')
     for name, param in mdl.named_parameters():
-        if '_nn' not in name:
-            logging.info(f'Parameter {name}: {param.size()}, require_grad = {param.requires_grad}')
+        logging.info(f'Parameter {name}: {param.size()}')
 
     ev_ix = ut.event_index(tr_q)
 
@@ -67,12 +58,10 @@ def main(args):
                              batch_size=args.batch_size,
                              shuffle=True,
                              num_workers=max(1, os.cpu_count() // 2))
-
         tr_dl_o = DataLoader(TrainDataset(tr_q, tp_ix, tp_rix, ev_ix, 'o', args),
                              batch_size=args.batch_size,
                              shuffle=True,
                              num_workers=max(1, os.cpu_count() // 2))
-
         tr_it = BidirectionalOneShotIterator(tr_dl_s, tr_dl_o)
 
         lr = args.learning_rate
@@ -104,7 +93,7 @@ def main(args):
         logs = []
         bst_mtrs = {}
         for stp in range(init_stp, args.max_steps + 1):
-            log = mdl.module.train_step(mdl, opt, opt_sc, tr_it, args)
+            log = train_step(mdl, opt, opt_sc, tr_it, args)
             logs.append(log)
 
             if stp % args.log_steps == 0:
@@ -117,7 +106,7 @@ def main(args):
 
             if args.do_valid and stp % args.valid_steps == 0:
                 logging.info('Evaluating on Valid Dataset ...')
-                mtrs = mdl.module.test_step(mdl, vd_q, al_q, ev_ix, args)
+                mtrs = test_step(mdl, vd_q, al_q, ev_ix, tp_ix, tp_rix, e_ix, u_ix, args)
                 if bst_mtrs.get(args.metric, None) is None or mtrs[args.metric] > bst_mtrs[args.metric]:
                     bst_mtrs = mtrs.copy()
                     var_ls = {'step': stp}
@@ -129,18 +118,20 @@ def main(args):
 
     if args.do_eval:
         logging.info('Evaluating on Training Dataset ...')
-        mtrs = mdl.module.test_step(mdl, tr_q, al_q, ev_ix, args)
+        mtrs = test_step(mdl, tr_q, al_q, ev_ix, tp_ix, tp_rix, e_ix, u_ix, args)
         ut.log('Test', stp, mtrs)
         ut.tensorboard_scalars(tb_sw, 'eval', stp, mtrs)
 
     if args.do_test:
-        args.valid_approximation = 0
-        args.test_log_steps = 100
+        valid_approximation, args.valid_approximation = args.valid_approximation, 0
+        test_log_steps, args.test_log_steps = args.test_log_steps, 100
         logging.info('Evaluating on Test Dataset ...')
         mdl.load_state_dict(torch.load(os.path.join(args.save_path, f'checkpoint.chk'))['mdl_state_dict'])
-        mtrs = mdl.module.test_step(mdl, ts_q, al_q, ev_ix, args)
+        mtrs = test_step(mdl, ts_q, al_q, ev_ix, tp_ix, tp_rix, e_ix, u_ix, args)
         ut.log('Test', stp, mtrs)
         ut.tensorboard_scalars(tb_sw, 'test', stp, mtrs)
+        args.valid_approximation = valid_approximation
+        args.test_log_steps = test_log_steps
 
     tb_sw.flush()
     tb_sw.close()
