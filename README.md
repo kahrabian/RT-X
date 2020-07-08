@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This repository provides the PyTorch implementation of the _RT-X_ model presented in _Software Engineering Event Modeling using Relative Time in Temporal Knowledge Graphs_ paper.
+This repository provides the PyTorch implementation of the _RT-X_ model presented in [_Software Engineering Event Modeling using Relative Time in Temporal Knowledge Graphs_](https://arxiv.org/abs/2007.01231) paper.
 
 ## Results
 
@@ -31,12 +31,12 @@ To check all the available arguments, you can run `python main.py --help`.
 
 ## Reproducibility
 
-To reproduce the _RT-X_ results presented in the ICML 2020 Workshop on Graph Representation Learning and Beyond (GRL+) paper _Software Engineering Event Modeling using Relative Time in Temporal Knowledge Graphs_, you can use the runner provided in `runner.sh`.
+To reproduce the _RT-X_ results presented in the [ICML 2020 Workshop on Graph Representation Learning and Beyond (GRL+)](https://grlplus.github.io/) paper [_Software Engineering Event Modeling using Relative Time in Temporal Knowledge Graphs_](https://arxiv.org/abs/2007.01231), you can use the runner provided in `runner.sh`.
 
 ## Licenses
 
 The code is released under the MIT license, see [LICENSE](LICENSE) and [LICENSE_RotatE](LICENSE_RotatE).
-The data is released under the [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/) license.
+The data is released under the [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/) license, also accessible [here](https://zenodo.org/record/3928580).
 
 ## Acknowledgments
 
