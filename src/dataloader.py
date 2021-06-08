@@ -116,9 +116,9 @@ class TrainDataset(Dataset):
 
         while neg_t_sz < self.neg_t_sz:
             neg_t = np.random.randint(self.min_ts, self.max_ts + 1, size=self.neg_t_sz * 2)
-            neg_d = np.apply_along_axis(lambda x: datetime.fromtimestamp(x, self.tz).day, 0, neg_t.reshape(1, -1))
-            neg_m = np.apply_along_axis(lambda x: datetime.fromtimestamp(x, self.tz).month, 0, neg_t.reshape(1, -1))
-            neg_y = np.apply_along_axis(lambda x: datetime.fromtimestamp(x, self.tz).year, 0, neg_t.reshape(1, -1))
+            neg_d = np.apply_along_axis(lambda x: datetime.fromtimestamp(x[-1], self.tz).day, 0, neg_t.reshape(1, -1))
+            neg_m = np.apply_along_axis(lambda x: datetime.fromtimestamp(x[-1], self.tz).month, 0, neg_t.reshape(1, -1))
+            neg_y = np.apply_along_axis(lambda x: datetime.fromtimestamp(x[-1], self.tz).year, 0, neg_t.reshape(1, -1))
 
             neg_t = neg_t[(neg_d != d) | (neg_m != m) | (neg_y != y)]
             neg_t_ls.append(neg_t)
@@ -129,9 +129,9 @@ class TrainDataset(Dataset):
         neg_abs_o_rel = np.array([], dtype=np.int64)
         if len(neg_t_ls) != 0:
             neg_t = np.concatenate(neg_t_ls)[:self.neg_t_sz]
-            neg_abs_d = np.apply_along_axis(lambda x: datetime.fromtimestamp(x, self.tz).day, 0, neg_t.reshape(1, -1))
-            neg_abs_m = np.apply_along_axis(lambda x: datetime.fromtimestamp(x, self.tz).month, 0, neg_t.reshape(1, -1))
-            neg_abs_y = np.apply_along_axis(lambda x: datetime.fromtimestamp(x, self.tz).year, 0, neg_t.reshape(1, -1))
+            neg_abs_d = np.apply_along_axis(lambda x: datetime.fromtimestamp(x[-1], self.tz).day, 0, neg_t.reshape(1, -1))
+            neg_abs_m = np.apply_along_axis(lambda x: datetime.fromtimestamp(x[-1], self.tz).month, 0, neg_t.reshape(1, -1))
+            neg_abs_y = np.apply_along_axis(lambda x: datetime.fromtimestamp(x[-1], self.tz).year, 0, neg_t.reshape(1, -1))
             neg_abs = np.stack([neg_abs_d, neg_abs_m, neg_abs_y])
             neg_abs_s_rel = np.apply_along_axis(lambda x: self._lt(s, x[0]), 0, neg_t.reshape(1, -1)).T
             neg_abs_o_rel = np.apply_along_axis(lambda x: self._lt(o, x[0]), 0, neg_t.reshape(1, -1)).T
@@ -229,9 +229,9 @@ class TestDataset(Dataset):
         else:
             neg = torch.from_numpy(np.array([], dtype=np.int64))
             neg_t = fil_b_neg[:, 1]
-            neg_abs_d = np.apply_along_axis(lambda x: datetime.fromtimestamp(x, self.tz).day, 0, neg_t.reshape(1, -1))
-            neg_abs_m = np.apply_along_axis(lambda x: datetime.fromtimestamp(x, self.tz).month, 0, neg_t.reshape(1, -1))
-            neg_abs_y = np.apply_along_axis(lambda x: datetime.fromtimestamp(x, self.tz).year, 0, neg_t.reshape(1, -1))
+            neg_abs_d = np.apply_along_axis(lambda x: datetime.fromtimestamp(x[-1], self.tz).day, 0, neg_t.reshape(1, -1))
+            neg_abs_m = np.apply_along_axis(lambda x: datetime.fromtimestamp(x[-1], self.tz).month, 0, neg_t.reshape(1, -1))
+            neg_abs_y = np.apply_along_axis(lambda x: datetime.fromtimestamp(x[-1], self.tz).year, 0, neg_t.reshape(1, -1))
             neg_abs = np.stack([neg_abs_d, neg_abs_m, neg_abs_y])
 
             neg_rel = torch.from_numpy(np.array([], dtype=np.int64))
