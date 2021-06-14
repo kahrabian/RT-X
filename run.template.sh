@@ -1,5 +1,4 @@
 #!/bin/sh
-
 python -u -c 'import torch; print(torch.__version__)'
 
 export WANDB_RUN_ID=${JOB_ID}

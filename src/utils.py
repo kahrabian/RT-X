@@ -53,7 +53,7 @@ def args():
     parser.add_argument('--type_evaluation', action='store_true')
 
     # Train Config
-    parser.add_argument('--batch_size', default=1024, type=int)
+    parser.add_argument('--batch_size', default=64, type=int)
     parser.add_argument('--test_batch_size', default=4, type=int)
 
     parser.add_argument('--max_steps', default=200000, type=int)
@@ -62,7 +62,7 @@ def args():
     parser.add_argument('--save_path', default=None, type=str)
     parser.add_argument('--metric', default='MRR', type=str, choices=['H1', 'H3', 'H10', 'MR', 'MRR'])
 
-    parser.add_argument('--mode', default='both', type=str, choices=['head', 'tail', 'both', 'time', 'full'])
+    parser.add_argument('--mode', default='head', type=str, choices=['head', 'tail', 'both', 'time', 'full'])
 
     parser.add_argument('--valid_steps', default=10000, type=int)
     parser.add_argument('--valid_approximation', default=0, type=int)
@@ -73,7 +73,7 @@ def args():
 
     parser.add_argument('--timezone', default='America/Montreal', type=str)
 
-    return parser.parse_args()
+    return parser
 
 
 def event_index(tr_q):
@@ -99,12 +99,22 @@ def index(fn, args):
     return ix
 
 
-def read(fn, e2id, r2id):
+def read_train(fn, e2id, r2id):
     q = []
     with open(fn) as f:
         for l in f:
             s, r, o, t = l.strip().split('\t')
             q.append((e2id[s], r2id[r], e2id[o], int(t)))
+    return q
+
+def read_valid_and_test(fn, e2id, r2id):
+    q = []
+    target = "U_SE_C_I"
+    with open(fn) as f:
+        for l in f:
+            s, r, o, t = l.strip().split('\t')
+            if r == target:
+                q.append((e2id[s], r2id[r], e2id[o], int(t)))
     return q
 
 
